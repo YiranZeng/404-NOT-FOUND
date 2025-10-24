@@ -1,0 +1,130 @@
+{% extends "main/base-user.html" %}
+{% block title %}Book Information Search{% endblock %}
+
+{% block body %}
+<div style="width: 1200px; margin: auto">
+  <br />
+  <form class="layui-form" method="post" id="searchForm">
+    {{ form.csrf_token }}
+    <div class="layui-form-item">
+      <div class="layui-inline">
+        <div class="layui-row layui-col-space10">
+          <div class="layui-col-md4">
+            {{ form.method(class="layui-input-inline") }}
+          </div>
+          <div class="layui-col-md6">
+            <label class="layui-form-label">Query:</label>
+            <div class="layui-input-inline">
+              {{ form.content(class="layui-input", style="width:250px") }}
+            </div>
+          </div>
+          <div class="layui-col-md2">
+            <div class="layui-input-inline">
+              {{ form.submit(class="layui-btn", id="search") }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div id="remove">
+    <table lay-even id="result" lay-filter="re">
+      <thead>
+        <tr>
+          <th lay-data="{field:'isbn', width:140}">ISBN</th>
+          <th lay-data="{field:'book_name', width:200}">Title</th>
+          <th lay-data="{field:'press', width:180}">Publisher</th>
+          <th lay-data="{field:'author', width:140}">Author</th>
+          <th lay-data="{field:'class_name', width:200}">Category</th>
+          <th lay-data="{field:'count', width:120}">Holdings</th>
+          <th lay-data="{field:'available'}">Available</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <table id="test" lay-filter="test"></table>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+layui.use(['form','table','jquery'], function(){
+  var form = layui.form;
+  var table = layui.table;
+  var $ = layui.$;
+
+  $(document).ready(function(){
+
+    // Click search button — even empty content will show all books
+    $('#search').on('click', function () {
+      var formData = new FormData(document.getElementById("searchForm"));
+
+      $.ajax({
+        url: "{{ url_for('main.find_book') }}",
+        type: "post",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (data) {
+          if (data.length === 0) {
+            layui.use('layer', function () {
+              var layer = layui.layer;
+              layer.msg('No books found.', { time: 1000 });
+            });
+          } else {
+            table.render({
+              elem: '#test',
+              data: data,
+              cols: [[
+                {field:'isbn', title:'ISBN', width:140},
+                {field:'book_name', title:'Book Name', width:200},
+                {field:'press', title:'Publisher', width:180},
+                {field:'author', title:'Author', width:140},
+                {field:'class_name', title:'Category', width:200},
+                {field:'count', title:'Total Copies', width:120},
+                {field:'available', title:'Available'}
+              ]],
+              page: true,
+              height: 480,
+              limit: 10
+            });
+          }
+        }
+      });
+      return false;
+    });
+
+    // Automatically load all books on first page load
+    $.ajax({
+      url: "{{ url_for('main.find_book') }}",
+      type: "post",
+      data: new FormData(document.getElementById("searchForm")),
+      processData: false,
+      contentType: false,
+      success: function (data) {
+        table.render({
+          elem: '#test',
+          data: data,
+          cols: [[
+            {field:'isbn', title:'ISBN', width:140},
+            {field:'book_name', title:'Book Name', width:200},
+            {field:'press', title:'Publisher', width:180},
+            {field:'author', title:'Author', width:140},
+            {field:'class_name', title:'Category', width:200},
+            {field:'count', title:'Total Copies', width:120},
+            {field:'available', title:'Available'}
+          ]],
+          page: true,
+          height: 480,
+          limit: 10
+        });
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
+

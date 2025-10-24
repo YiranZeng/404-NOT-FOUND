@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+
+    <!-- LayUI main stylesheet -->
+    <link rel="stylesheet" href="../static/layui/css/layui.css">
+
+    <!-- Custom per-page CSS -->
+    <style>{% block style %}{% endblock %}</style>
+</head>
+
+<body style="background-color:#f2f2f2; height:100%; width:100%;">
+<script src="../static/layui/layui.js"></script>
+
+<div class="layui-container">
+
+  <!-- Left sidebar navigation -->
+  <ul class="layui-nav layui-nav-tree layui-nav-side">
+    <span style="color:#BFC0C2; font-size: medium; margin-left: 20px; line-height: 50px;">
+      Library Management System
+    </span>
+
+    <li class="layui-nav-item">
+      <a href="javascript:;">Book Management</a>
+      <dl class="layui-nav-child">
+        <dd><a href="javascript:;">Storage Management</a></dd>
+        <dd><a href="javascript:;">Student Borrowing</a></dd>
+        <dd><a href="">Book Returns</a></dd>
+        <dd><a href="">Book Withdrawal</a></dd>
+      </dl>
+    </li>
+
+    <li class="layui-nav-item">
+      <a href="javascript:;">Information Settings</a>
+      <dl class="layui-nav-child">
+        <dd><a href="">Admin Settings</a></dd>
+        <dd><a href="">Library Information Settings</a></dd>
+        <dd><a href="">Book Category Settings</a></dd>
+      </dl>
+    </li>
+
+    <li class="layui-nav-item">
+      <a href="http://127.0.0.1:5000/search_book">Book Information Search</a>
+    </li>
+
+    <li class="layui-nav-item">
+      <a href="javascript:;">Student Information Search</a>
+    </li>
+  </ul>
+
+  <!-- Top navigation bar -->
+  <ul class="layui-nav" style="text-align:right; background-color:#FFFFFF; width:110%;">
+    <li class="layui-nav-item">
+      <a href="" style="color:#000000">
+        Personal Center <span class="layui-badge-dot"></span>
+      </a>
+      <dl class="layui-nav-child">
+        <dd><a href="javascript:;">Edit Profile</a></dd>
+        <dd><a href="javascript:;">Log Out</a></dd>
+      </dl>
+    </li>
+  </ul>
+
+  <!-- Main content card -->
+  <div class="layui-card layui-row layui-col-space10" style="margin:15px 100px; width:100%;">
+    <div class="layui-card-header">{% block card %}{% endblock %}</div>
+    <div class="layui-card-body" style="height:480px">
+        {% block body %}
+        {% endblock %}
+    </div>
+  </div>
+
+</div>
+
+<!-- Page-specific JavaScript -->
+<script>
+{% block script %}
+{% endblock %}
+</script>
+
+</body>
+</html>

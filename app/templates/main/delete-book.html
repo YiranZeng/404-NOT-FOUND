@@ -1,0 +1,71 @@
+{% extends 'main/base.html' %}
+{% block title %}Delete Book Copies{% endblock %}
+
+{% block body %}
+<div class="layui-card" style="margin:20px;">
+  <div class="layui-card-header">
+    <h2>Delete Book Copies</h2>
+  </div>
+
+  <div class="layui-card-body">
+    <form method="get" style="margin-bottom:20px;">
+      <div class="layui-form-item">
+        <label class="layui-form-label" style="font-size:medium;">ISBN:</label>
+        <div class="layui-input-inline">
+          <input type="text" name="isbn" placeholder="Enter ISBN" class="layui-input" style="width:250px;" required>
+        </div>
+        <button type="submit" class="layui-btn">Search</button>
+      </div>
+    </form>
+
+    {% if books %}
+    <form method="post">
+      <table class="layui-table">
+        <thead>
+          <tr>
+            <th style="width:5%;text-align:center;">
+              <input type="checkbox" id="select-all">
+            </th>
+            <th>Barcode</th>
+            <th>ISBN</th>
+            <th>Book Title</th>
+            <th>Author</th>
+            <th>Press</th>
+            <th>Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in books %}
+          <tr>
+            <td style="text-align:center;">
+              <input type="checkbox" name="selected_books" value="{{ b.barcode }}">
+            </td>
+            <td>{{ b.barcode }}</td>
+            <td>{{ b.isbn }}</td>
+            <td>{{ b.book_name }}</td>
+            <td>{{ b.author }}</td>
+            <td>{{ b.press }}</td>
+            <td>{{ b.location }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div style="text-align:center;margin-top:15px;">
+        <button type="submit" class="layui-btn layui-btn-danger">Delete Selected</button>
+      </div>
+    </form>
+    {% else %}
+      <p style="color:#999;">Please enter an ISBN to display available copies.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  // 全选/取消全选
+  document.getElementById('select-all')?.addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('input[name="selected_books"]');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+  });
+</script>
+{% endblock %}
