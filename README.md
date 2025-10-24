@@ -1,12 +1,26 @@
-# Book-Management-System-V2
-flask图书管理系统2.0——使用flask blueprint蓝图
+Library Management System
 
-原系统+使用说明在https://github.com/lyric777/Book-Management-System
+1. Overview:
+The Library Management System is a web-based application developed with Flask, SQLAlchemy, and LayUI.
+It provides librarians with tools to manage books, students, and borrowing records through a clear and responsive interface.
 
-2.0系统数据库里的数据就随便编了2条，跟原来测试用例有点区别：
+2. Key Features:
+	Admin login and authentication for secure access.
+	Book registration and search by title, author, or ISBN.
+	Inventory management for adding or deleting book copies.
+	Student information management with card status tracking.
+	Fuzzy search support for easier book lookup.
+	Responsive UI built with LayUI components.
 
-管理员登录账号：李华，密码：1234
+3. Database Design:
+	Book – Stores general book information (ISBN, title, author, publisher, category).
+	Student – Contains personal and card information.
+	Admin – Records librarian login credentials and permissions.
+	Inventory – Tracks physical book copies via barcode.
+	ReadBook – Logs borrowing and returning activities.
 
-已有的学生，借阅卡号：12345678
-
-馆藏图书名字：测试1、测试2，类别都是计算机，作者是作者1、作者2，isbn是1234567890123、1234567890124，条形码编号（barcode）设置为6位。
+4. Technology Stack:
+	Backend (Flask, SQLAlchemy),
+	Frontend (HTML, CSS, LayUI),
+	Database (SQLite / MySQL),
+	Authentication (Flask-Login)
