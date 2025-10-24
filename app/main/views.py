@@ -331,7 +331,7 @@ def find_stu_book():
                 else:
                     valid_ts = stu.valid_date.timestamp()
             except Exception as e:
-                print("⚠️ Date parse error:", e)
+                print("Date parse error:", e)
                 valid_ts = 0
 
         now_ts = time.time()
@@ -378,7 +378,7 @@ def find_stu_book():
         return jsonify(data)
 
     except Exception as e:
-        print("❌ ERROR:", e)
+        print("ERROR:", e)
         import traceback;
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
