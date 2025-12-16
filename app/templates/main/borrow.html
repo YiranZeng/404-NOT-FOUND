@@ -58,20 +58,42 @@ layui.use(['form','table','jquery'], function(){
   });
 
   // Tool event for the rendered table
-  table.on('tool(test)', function(obj){
-    var data = obj.data;     // current row
-    var layEvent = obj.event; // event name
+  table.on('tool(test)', function (obj) {
+    var data = obj.data;     
+    var layEvent = obj.event; 
     console.log(obj);
-    if (layEvent === 'borr'){
-      layer.confirm('Confirm borrow?', function(index){
-        table.reload('test', {
+
+    if (layEvent === 'borr') {
+      layer.confirm('Confirm borrow?', {
+        title: 'Message',
+        btn: ['Confirm', 'Cancel']
+      }, function (index) {
+
+        $.ajax({
           url: "{{ url_for('main.out') }}",
-          where: {
+          type: "get",
+          data: {
             'barcode': data.barcode,
             'card': $('#card').val(),
             'book_name': $('#book_name').val()
+          },
+          success: function (res) {
+            if (res.status === "ok") {
+              layer.msg('Borrow successful!', {icon: 1, time: 1500});
+
+              
+              table.reload('test', {
+                data: res.data        
+              });
+            } else {
+              layer.msg('Borrow failed!', {icon: 2});
+            }
+          },
+          error: function () {
+            layer.msg('Server error!', {icon: 2});
           }
         });
+
         layer.close(index);
       });
     }

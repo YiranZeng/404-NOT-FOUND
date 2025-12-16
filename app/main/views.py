@@ -183,28 +183,68 @@ def timeStamp(timeNum):
         return time.strftime("%Y-%m-%d", timeArray)
 
 
+
+def calc_student_fine(card_id, rate_per_day=1.0):
+    now_ts = int(time.time())
+    total_fine = 0.0
+
+    records = ReadBook.query.filter_by(card_id=card_id).all()
+
+    for r in records:
+        if r.end_date is None:
+            try:
+                due_ts = int(r.due_date) // 1000
+            except (TypeError, ValueError):
+                continue
+
+            overdue_days = (now_ts - due_ts) // 86400
+            grace = 30
+            if overdue_days > grace:
+                charge_days = overdue_days - grace
+                total_fine += charge_days * rate_per_day
+
+    return round(total_fine, 2)
+
 @main.route('/student', methods=['POST'])
 def find_student():
-    stu = Student.query.filter_by(card_id=request.form.get('card')).first()
+    card = request.form.get('card')
+    password = request.form.get('password')
+
+    stu = Student.query.filter_by(card_id=card, password=password).first()
+
     if stu is None:
         return jsonify([])
-    else:
-        valid_date = timeStamp(stu.valid_date)
-        return jsonify([{
-            'name': stu.student_name,
-            'gender': stu.sex,
-            'valid_date': valid_date,
-            'debt': stu.debt
-        }])
+
+    total_fine = calc_student_fine(stu.card_id)
+
+    stu.debt = total_fine > 0
+    db.session.add(stu)
+    db.session.commit()
+
+    valid_date = timeStamp(stu.valid_date)
+    return jsonify([{
+        'name': stu.student_name,
+        'gender': stu.sex,
+        'valid_date': valid_date,
+        'debt': stu.debt,
+        'fine': total_fine 
+    }])
 
 
 @main.route('/record', methods=['POST'])
 def find_record():
+    card = request.form.get('card')
+    password = request.form.get('password')
+
+    stu = Student.query.filter_by(card_id=card, password=password).first()
+    if stu is None:
+        return jsonify([])
+
     records = (
         db.session.query(ReadBook)
         .join(Inventory)
         .join(Book)
-        .filter(ReadBook.card_id == request.form.get('card'))
+        .filter(ReadBook.card_id == card)
         .with_entities(
             ReadBook.barcode,
             Inventory.isbn,
@@ -215,21 +255,39 @@ def find_record():
             ReadBook.due_date,
         )
         .all()
-    )  # with_entities (this took me a while)
+    )
+
+    now_ts = int(time.time())
+    rate_per_day = 1.0
+
     data = []
     for record in records:
         start_date = timeStamp(record.start_date)
         due_date = timeStamp(record.due_date)
         end_date = timeStamp(record.end_date)
+
+        # 计算单本书罚金
+        fine = 0.0
+        if record.end_date is None:
+            try:
+                due_ts = int(record.due_date) // 1000
+                overdue_days = (now_ts - due_ts) // 86400
+                if overdue_days > 0:
+                    fine = round(overdue_days * rate_per_day, 2)
+            except (TypeError, ValueError):
+                pass
+
         if end_date is None:
             end_date = 'Not returned'
+
         item = {
             'barcode': record.barcode,
             'book_name': record.book_name,
             'author': record.author,
             'start_date': start_date,
             'due_date': due_date,
-            'end_date': end_date
+            'end_date': end_date,
+            'fine': fine        
         }
         data.append(item)
     return jsonify(data)
@@ -422,7 +480,11 @@ def out():
             'press': bk.press
         }
         data.append(item)
-    return jsonify(data)
+    return jsonify({
+    "status": "ok",
+    "msg": "Borrow successful!",
+    "data": data
+})
 
 
 @main.route('/return', methods=['GET', 'POST'])
@@ -440,8 +502,8 @@ def find_not_return_book():
     today_stamp = time.mktime(time.strptime(today_str + ' 00:00:00', '%Y-%m-%d %H:%M:%S'))
     if stu is None:
         return jsonify([{'stu': 0}])  # not found
-    if stu.debt is True:
-        return jsonify([{'stu': 1}])  # has outstanding fees
+    #if stu.debt is True:
+       # return jsonify([{'stu': 1}])  # has outstanding fees
     if int(stu.valid_date) < int(today_stamp) * 1000:
         return jsonify([{'stu': 2}])  # expired
     if stu.loss is True:
@@ -517,7 +579,11 @@ def bookin():
             'due_date': due_date
         }
         data.append(item)
-    return jsonify(data)
+    return jsonify({
+    "status": "ok",
+    "msg": "Return successful!",
+    "data": data
+})
 
 
 @main.route('/delete_book', methods=['GET', 'POST'])
@@ -561,3 +627,71 @@ def delete_book():
         return redirect(url_for('.delete_book'))
 
     return render_template('main/delete-book.html', name=session.get('name'), books=books)
+
+
+
+
+
+
+@main.route('/admin/student', methods=['POST'])
+@login_required
+def admin_find_student():
+    card = request.form.get('card')
+    stu = Student.query.filter_by(card_id=card).first()
+    if stu is None:
+        return jsonify([])
+
+    total_fine = calc_student_fine(stu.card_id)
+    stu.debt = total_fine > 0
+    db.session.add(stu)
+    db.session.commit()
+
+    valid_date = timeStamp(stu.valid_date)
+    return jsonify([{
+        'name': stu.student_name,
+        'gender': stu.sex,
+        'valid_date': valid_date,
+        'debt': stu.debt
+    }])
+
+
+@main.route('/admin/record', methods=['POST'])
+@login_required
+def admin_find_record():
+    card = request.form.get('card')
+
+    records = (
+        db.session.query(ReadBook)
+        .join(Inventory)
+        .join(Book)
+        .filter(ReadBook.card_id == card)
+        .with_entities(
+            ReadBook.barcode,
+            Inventory.isbn,
+            Book.book_name,
+            Book.author,
+            ReadBook.start_date,
+            ReadBook.end_date,
+            ReadBook.due_date,
+        )
+        .all()
+    )
+
+    data = []
+    for record in records:
+        start_date = timeStamp(record.start_date)
+        due_date = timeStamp(record.due_date)
+        end_date = timeStamp(record.end_date)
+        if end_date is None:
+            end_date = 'Not returned'
+        item = {
+            'barcode': record.barcode,
+            'book_name': record.book_name,
+            'author': record.author,
+            'start_date': start_date,
+            'due_date': due_date,
+            'end_date': end_date
+        }
+        data.append(item)
+    return jsonify(data)
+

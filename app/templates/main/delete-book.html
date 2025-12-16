@@ -62,7 +62,7 @@
 </div>
 
 <script>
-  // select all
+  // 全选/取消全选
   document.getElementById('select-all')?.addEventListener('change', function() {
     const checkboxes = document.querySelectorAll('input[name="selected_books"]');
     checkboxes.forEach(cb => cb.checked = this.checked);

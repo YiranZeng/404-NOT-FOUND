@@ -62,10 +62,11 @@
 
 {% block script %}
 <script>
-layui.use(['form','table','jquery'], function(){
+layui.use(['form','table','jquery','layer'], function(){
   var form = layui.form;
   var table = layui.table;
   var $ = layui.$;
+  var layer = layui.layer;
 
   table.init('re', {
     height: 390,
@@ -75,88 +76,100 @@ layui.use(['form','table','jquery'], function(){
 
   $(document).ready(function(){
     $('#search').on('click', function () {
-      var formData = new FormData(document.getElementById("searchForm"));
-      if ($('#card').val() === "") {
-        layui.use('layer', function(){
-          var layer = layui.layer;
-          layer.msg('Please enter a library card number.', {time: 800});
-        });
-      } else {
-        $.ajax({
-          url: "{{ url_for('main.find_student') }}",
-          type: "post",
-          data: formData,
-          processData: false,
-          contentType: false,
-          success: function(data){
-            $("#name").empty();
-            $("#gender").empty();
-            $("#valid_date").empty();
-            $("#debt").empty();
-
-            if (data.length !== 0){
-              $("#name").append(data[0].name);
-              $("#gender").append(data[0].gender);
-              $("#valid_date").append(data[0].valid_date);
-              if (data[0].debt === false){
-                $("#debt").append('No');
-              } else {
-                $("#debt").append('Yes');
-              }
-
-              $.ajax({
-                url: "{{ url_for('main.find_record') }}",
-                type: "post",
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(data){
-                  if (data.length !== 0){
-                    $('#remove').remove();
-                    table.render({
-                      elem: '#test',
-                      data: data,
-                      cols: [[
-                        {field:'barcode',    title:'Book Code',  width:160},
-                        {field:'book_name',  title:'Title',      width:200},
-                        {field:'author',     title:'Author',     width:140},
-                        {field:'start_date', title:'Start Date', width:200},
-                        {field:'due_date',   title:'Due Date',   width:200},
-                        {field:'end_date',   title:'Return Date'}
-                      ]],
-                      page: true,
-                      height: 390,
-                      limit: 7,
-                      response: {
-                        statusCode: 200 // redefine success code to 200 (LayUI default is 0)
-                      },
-                      parseData: function(data){ // adapt to LayUI table format
-                        return {
-                          "code": data.status,
-                          "msg": data.message,
-                          "count": data.total,
-                          "data": data.rows.item
-                        };
-                      }
-                    });
-                  } else {
-                    layui.use('layer', function(){
-                      var layer = layui.layer;
-                      layer.msg('No borrowing records.', {time: 1000});
-                    });
-                  }
-                }
-              });
-
-            } else {
-              layui.use('layer', function(){
-                var layer = layui.layer;
-                layer.msg('Student not found!', {time: 1000});
-              });
-            }
-          }
-        });
+      var card = $('#card').val().trim();
+      if (card === "") {
+        layer.msg('Please enter a library card number.', {time: 800});
+        return false;
       }
+
+      var formData = new FormData(document.getElementById("searchForm"));
+
+      // 1. 先查学生基本信息（管理员接口，不需要密码）
+      $.ajax({
+        url: "{{ url_for('main.admin_find_student') }}",
+        type: "post",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(data){
+          $("#name").empty();
+          $("#gender").empty();
+          $("#valid_date").empty();
+          $("#debt").empty();
+
+          if (data.length !== 0){
+            $("#name").text(data[0].name);
+            $("#gender").text(data[0].gender);
+            $("#valid_date").text(data[0].valid_date);
+            $("#debt").text(data[0].debt === false ? 'No' : 'Yes');
+
+            // 2. 再查借阅记录（管理员接口）
+            $.ajax({
+              url: "{{ url_for('main.admin_find_record') }}",
+              type: "post",
+              data: formData,
+              processData: false,
+              contentType: false,
+              success: function(rows){
+                if (rows.length !== 0){
+                  $('#remove').remove();
+                  table.render({
+                    elem: '#test',
+                    data: rows,
+                    cols: [[
+                      {field:'barcode',    title:'Book Code',  width:160},
+                      {field:'book_name',  title:'Title',      width:200},
+                      {field:'author',     title:'Author',     width:140},
+                      {field:'start_date', title:'Start Date', width:200},
+                      {field:'due_date',   title:'Due Date',   width:200},
+                      {field:'end_date',   title:'Return Date'}
+                    ]],
+                    page: true,
+                    height: 390,
+                    limit: 7
+                  });
+                } else {
+                  layer.msg('No borrowing records.', {time: 1000});
+                  table.render({
+                    elem: '#test',
+                    data: [],
+                    cols: [[
+                      {field:'barcode',    title:'Book Code',  width:160},
+                      {field:'book_name',  title:'Title',      width:200},
+                      {field:'author',     title:'Author',     width:140},
+                      {field:'start_date', title:'Start Date', width:200},
+                      {field:'due_date',   title:'Due Date',   width:200},
+                      {field:'end_date',   title:'Return Date'}
+                    ]],
+                    page: true,
+                    height: 390,
+                    limit: 7
+                  });
+                }
+              }
+            });
+
+          } else {
+            layer.msg('Student not found!', {time: 1000});
+            table.render({
+              elem: '#test',
+              data: [],
+              cols: [[
+                {field:'barcode',    title:'Book Code',  width:160},
+                {field:'book_name',  title:'Title',      width:200},
+                {field:'author',     title:'Author',     width:140},
+                {field:'start_date', title:'Start Date', width:200},
+                {field:'due_date',   title:'Due Date',   width:200},
+                {field:'end_date',   title:'Return Date'}
+              ]],
+              page: true,
+              height: 390,
+              limit: 7
+            });
+          }
+        }
+      });
+
       return false;
     });
   });

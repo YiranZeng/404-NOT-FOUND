@@ -10,11 +10,15 @@
     <!--{{ form.csrf_token }}-->
     <div class="layui-form-item">
         <div class="layui-inline">
-            <label class="layui-form-label" style="font-size: medium;width: 150px;">Library Card Number:</label>
+            <label class="layui-form-label" style="font-size: medium;width: 150px;">
+              Library Card Number:
+            </label>
             <div class="layui-input-inline">
                 {{ form.card(class="layui-input", id="card") }}
             </div>
-            <div class="layui-input-inline">{{ form.submit(class="layui-btn", id="search") }}</div>
+            <div class="layui-input-inline">
+              {{ form.submit(class="layui-btn", id="search") }}
+            </div>
         </div>
     </div>
 </form>
@@ -40,31 +44,53 @@
 
 {% block script %}
 <script>
-layui.use(['form','table','jquery'], function(){
+layui.use(['form','table','jquery','layer'], function(){
   var form = layui.form;
   var table = layui.table;
   var $ = layui.$;
+  var layer = layui.layer;
 
+  
   table.init('re', {
     height: 390,
     limit: 7,
     page: true
   });
 
-  // Note: 'tool' is the toolbar event; 'test' matches the table's lay-filter
+  
   table.on('tool(test)', function(obj){
-    var data = obj.data;      // current row data
-    var layEvent = obj.event; // lay-event value
+    var data = obj.data;      
+    var layEvent = obj.event; 
     console.log(obj);
+
     if (layEvent === 'return'){
-      layer.confirm('Confirm return?', function(index){
-        table.reload('test', {
+      layer.confirm('Confirm return?', {
+        title: 'Message',
+        btn: ['Confirm', 'Cancel']
+      }, function(index){
+
+        // 
+        $.ajax({
           url: "{{ url_for('main.bookin') }}",
-          where: {
+          type: "get",
+          data: {
             'barcode': data.barcode,
-            'card': $('#card').val(),
+            'card': $('#card').val()
+          },
+          success: function(res){
+            // 
+            layer.msg('Return successful!', {icon: 1, time: 1500});
+
+            // 
+            table.reload('test', {
+              data: res
+            });
+          },
+          error: function(){
+            layer.msg('Server error!', {icon: 2});
           }
         });
+
         layer.close(index);
       });
     }
@@ -72,41 +98,41 @@ layui.use(['form','table','jquery'], function(){
 
   $(document).ready(function(){
     $('#search').on('click', function () {
-      var form = new FormData(document.getElementById("searchForm"));
-      // Note: this page has no 'book_name' input; we keep logic consistent with your original code
-      if ($('#card').val() === "" || $('#book_name').val() === ""){
-        layui.use('layer', function(){
-          var layer = layui.layer;
-          layer.msg('Please fill in the required fields.', {time: 800});
-        });
+      var formData = new FormData(document.getElementById("searchForm"));
+
+      // 
+      if ($('#card').val() === ""){
+        layer.msg('Please enter a library card number.', {time: 800});
       } else {
         $.ajax({
           url: "{{ url_for('main.find_not_return_book') }}",
           type: "post",
-          data: form,
+          data: formData,
           processData: false,
           contentType: false,
           success: function(data){
             if (data.length !== 0){
+              
               if (data[0].stu === 0){
-                layui.use('layer', function(){ layui.layer.msg('Please enter a valid card number!', {time: 1000}); });
+                layer.msg('Please enter a valid card number!', {time: 1000});
               } else if (data[0].stu === 1){
-                layui.use('layer', function(){ layui.layer.msg('This library card has outstanding fees!', {time: 1000}); });
+                layer.msg('This library card has outstanding fees!', {time: 1000});
               } else if (data[0].stu === 2){
-                layui.use('layer', function(){ layui.layer.msg('This library card has expired!', {time: 1000}); });
+                layer.msg('This library card has expired!', {time: 1000});
               } else if (data[0].stu === 3){
-                layui.use('layer', function(){ layui.layer.msg('This library card has been reported lost!', {time: 1000}); });
+                layer.msg('This library card has been reported lost!', {time: 1000});
               } else {
+                //
                 $('#remove').remove();
                 table.render({
                   elem: '#test',
                   data: data,
                   cols: [[
-                    {field:'barcode',   title:'Book Code', width:160},
-                    {field:'isbn',      title:'ISBN',      width:180},
-                    {field:'book_name', title:'Title',     width:240},
-                    {field:'start_date',title:'Start Date',width:180},
-                    {field:'due_date',  title:'Due Date',  width:180},
+                    {field:'barcode',   title:'Book Code',  width:160},
+                    {field:'isbn',      title:'ISBN',       width:180},
+                    {field:'book_name', title:'Title',      width:240},
+                    {field:'start_date',title:'Start Date', width:180},
+                    {field:'due_date',  title:'Due Date',   width:180},
                     {title:'Action', fixed: 'right', align:'center', toolbar: '#barDemo'}
                   ]],
                   page: true,
@@ -116,7 +142,7 @@ layui.use(['form','table','jquery'], function(){
                   parseData: function(data){
                     return {
                       "code": 200,
-                      "msg": data.message,
+                      "msg": '',
                       "count": data.length,
                       "data": data
                     };
@@ -124,20 +150,17 @@ layui.use(['form','table','jquery'], function(){
                 });
               }
             } else {
-              layui.use('layer', function(){
-                var layer = layui.layer;
-                layer.msg('This student has no unreturned books!', {time: 2000});
-              });
-              data = [];
+              // 
+              layer.msg('This student has no unreturned books!', {time: 2000});
               table.render({
                 elem: '#test',
-                data: data,
+                data: [],
                 cols: [[
-                  {field:'barcode',   title:'Book Code', width:160},
-                  {field:'isbn',      title:'ISBN',      width:180},
-                  {field:'book_name', title:'Title',     width:240},
-                  {field:'author',    title:'Author',    width:140},
-                  {field:'press',     title:'Publisher', width:200},
+                  {field:'barcode',   title:'Book Code',  width:160},
+                  {field:'isbn',      title:'ISBN',       width:180},
+                  {field:'book_name', title:'Title',      width:240},
+                  {field:'start_date',title:'Start Date', width:180},
+                  {field:'due_date',  title:'Due Date',   width:180},
                   {title:'Action', fixed: 'right', align:'center', toolbar: '#barDemo'}
                 ]],
                 page: true,
@@ -147,9 +170,9 @@ layui.use(['form','table','jquery'], function(){
                 parseData: function(data){
                   return {
                     "code": 200,
-                    "msg": data.message,
-                    "count": data.length,
-                    "data": data
+                    "msg": '',
+                    "count": 0,
+                    "data": []
                   };
                 }
               });

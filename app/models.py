@@ -51,7 +51,7 @@ class Student(db.Model):
     valid_date = db.Column(db.String(13))
     loss = db.Column(db.Boolean, default=False)
     debt = db.Column(db.Boolean, default=False)
-
+    password = db.Column(db.String(24))
     def __repr__(self):
         return '<Student %r>' % self.student_name
 
