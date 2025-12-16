@@ -266,7 +266,6 @@ def find_record():
         due_date = timeStamp(record.due_date)
         end_date = timeStamp(record.end_date)
 
-        # 计算单本书罚金
         fine = 0.0
         if record.end_date is None:
             try:
